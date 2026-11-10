@@ -1,10 +1,12 @@
-# Who Knows SOLIDWORKS and 3DEXPERIENCE?
+# Who is the SOLIDWORKS Champion?
 
-A "Who Wants to Be a Millionaire"-style quiz on SOLIDWORKS and 3DEXPERIENCE.
+A quiz-show style game to help engineers learn SOLIDWORKS and 3DEXPERIENCE.
 
-- 50 questions in the bank (technical SOLIDWORKS questions plus 3DEXPERIENCE role and app names); each game draws 20 at random.
-- Four answers per question. Correct answers earn points; wrong answers earn 0 and the game continues.
-- Two lifelines, each usable once per game: 50:50 and Call the expert.
+- 50 questions in the bank (17 easy, 17 medium, 16 hard). Each game draws 20: 7 easy, 7 medium, then 6 hard.
+- Four answers per question, shuffled every game. A correct answer earns the points on that step of the ladder; a wrong answer earns 0 and the game continues.
+- Two lifelines, each usable once per game: **50:50** removes two wrong answers, **Call the expert** suggests an answer (usually, but not always, right).
+- Each answer shows a short explanation. The end screen gives your score, a rank, and a review list of missed questions.
+- Keyboard: A–D to pick an answer, Enter to confirm or continue.
 
 ## Run it
 
@@ -12,4 +14,6 @@ Open `index.html` in any modern web browser. No installation needed.
 
 ## Editing questions
 
-Questions live in the `BANK` array near the top of the `<script>` section in `index.html`. The first answer in each list is the correct one; the options are shuffled at runtime.
+Questions live in the `BANK` array at the top of the `<script>` section in `index.html`. Each entry has `d` (difficulty 1–3), `q` (question), `a` (answers, the first one is correct) and `x` (explanation).
+
+© PHAN Bá Thông aka Grandpa
