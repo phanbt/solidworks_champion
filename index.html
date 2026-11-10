@@ -128,6 +128,32 @@ h1 em{font-style:normal;color:var(--accent)}
 .review .item b{color:var(--good);font-weight:600}
 
 .copy{position:fixed;left:0;bottom:0;padding:8px 12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));font-family:var(--mono);font-size:12px;color:var(--muted);background:linear-gradient(transparent,var(--bg) 40%);z-index:5;pointer-events:none}
+/* Phone layout */
+@media (max-width:600px){
+  body{padding-block:14px 24px}
+  .hud-right{width:100%;flex-direction:column;align-items:stretch;gap:10px}
+  .hud{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;font-size:11px}
+  .hud .player{grid-column:1/-1}
+  .hud b{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hud .player b{max-width:none}
+  #restartBtn{align-self:flex-start}
+  .sheet{padding:16px}
+  .ans{min-height:52px;padding:12px}
+  .controls .btn:not(.small){flex:1 1 100%}
+  .summary{font-size:13px}
+  .summary th,.summary td{padding:7px 6px}
+  .summary th{font-size:10.5px;letter-spacing:.04em}
+
+  .meter-labels{flex-direction:column;gap:2px}
+  .result-score span{white-space:nowrap}
+  .copy{position:static;background:none;padding:18px 0 0;text-align:left}
+  .review{max-height:none}
+}
+@media (max-width:380px){
+  .summary{font-size:12px}
+  .summary th,.summary td{padding:7px 3px}
+  .summary th{font-size:9.5px;letter-spacing:0}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 @keyframes pop{from{transform:scale(.98);opacity:.6}to{transform:none;opacity:1}}
 .pop{animation:pop .25s ease-out}
@@ -369,10 +395,14 @@ function lockIn(){
   render();
 }
 function next(){
-  if(S.i===19){ S.phase="end"; render(); return; }
-  S.i++; S.sel=null; S.locked=false; S.hidden=[]; S.expertMsg=null; render();
+  if(S.i===19){ S.phase="end"; render(); scrollToSheet(); return; }
+  S.i++; S.sel=null; S.locked=false; S.hidden=[]; S.expertMsg=null; render(); scrollToSheet();
 }
 
+function scrollToSheet(){
+  const r=$("sheet").getBoundingClientRect();
+  if(r.top<0||r.top>window.innerHeight*0.5) $("sheet").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+}
 function rankFor(pct){
   if(pct>=CHAMP_PCT) return ["SOLIDWORKS Champion","You reached at least 80% of the total points. Take a bow."];
   if(pct>=0.6) return ["Expert","Very strong. A little more on the hard questions and the title is yours."];
@@ -404,7 +434,7 @@ function renderEnd(){
     </div>
     ${!champ?`<p style="color:var(--muted)">You needed ${fmt(goal-S.points)} more points for the Champion title.</p>`:""}
     <div class="table-wrap"><table class="summary">
-      <thead><tr><th>Level</th><th>Correct</th><th>Points earned</th><th>Points available</th></tr></thead>
+      <thead><tr><th>Level</th><th>Correct</th><th>Earned</th><th>Possible</th></tr></thead>
       <tbody>${rows.map(r=>`<tr><td>${DIFF[r.d]}</td><td>${r.c} / ${r.n}</td><td>${fmt(r.pts)}</td><td>${fmt(r.max)}</td></tr>`).join("")}</tbody>
       <tfoot><tr><td>Total</td><td>${S.correct} / 20</td><td>${fmt(S.points)}</td><td>${fmt(TOTAL)}</td></tr></tfoot>
     </table></div>
