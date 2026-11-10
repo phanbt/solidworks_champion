@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Who is the SOLIDWORKS Champion?</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -36,6 +35,26 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,5vw,44px);lin
 h1 em{font-style:normal;color:var(--accent)}
 .hud{display:flex;gap:18px;font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .hud b{display:block;font-family:var(--display);font-size:24px;color:var(--fg);font-weight:600}
+.hud .player b{max-width:14ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hud-right{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap}
+.btn.small{font-size:14px;padding:7px 14px}
+.btn.warn{border-color:var(--bad);color:var(--bad)}
+.field{display:flex;flex-direction:column;gap:6px;max-width:360px}
+.field label{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.field input{background:var(--panel-2);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:10px 12px;font:500 16px var(--body)}
+.field input:focus-visible{outline:2px solid var(--select);outline-offset:1px;border-color:var(--select)}
+.field .err{font-size:13px;color:var(--bad);min-height:1.2em}
+.summary{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+.summary th,.summary td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--line)}
+.summary th:first-child,.summary td:first-child{text-align:left}
+.summary th{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.summary tfoot td{font-weight:600;border-bottom:0}
+.table-wrap{overflow-x:auto}
+.meter{height:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:999px;position:relative;overflow:visible}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:999px}
+.meter i.champ{background:var(--good)}
+.meter .goal{position:absolute;top:-5px;bottom:-5px;left:80%;border-left:2px dashed var(--fg)}
+.meter-labels{display:flex;justify-content:space-between;font:12px var(--mono);color:var(--muted);margin-top:6px}
 
 .stage{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:20px;align-items:start}
 @media (max-width:820px){.stage{grid-template-columns:minmax(0,1fr)}.ladder{order:2}}
@@ -122,10 +141,14 @@ h1 em{font-style:normal;color:var(--accent)}
       <small>SOLIDWORKS · 3DEXPERIENCE quiz</small>
       <h1>Who is the <em>SOLIDWORKS</em> Champion?</h1>
     </div>
-    <div class="hud" aria-live="polite">
-      <div>Question<b id="hudQ">–</b></div>
-      <div>Correct<b id="hudC">0</b></div>
-      <div>Points<b id="hudP">0</b></div>
+    <div class="hud-right">
+      <div class="hud" aria-live="polite">
+        <div class="player">Player<b id="hudN">–</b></div>
+        <div>Question<b id="hudQ">–</b></div>
+        <div>Correct<b id="hudC">0</b></div>
+        <div>Points<b id="hudP">0</b></div>
+      </div>
+      <button class="btn ghost small" id="restartBtn" hidden>Restart game</button>
     </div>
   </header>
 
@@ -208,14 +231,19 @@ let S;
 const $ = id => document.getElementById(id);
 const shuffle = arr => { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
 
-function newGame(){
+const TOTAL = LADDER.reduce((a,b)=>a+b,0);
+const CHAMP_PCT = 0.8;
+let lastName = "";
+try { lastName = localStorage.getItem("swChampName") || ""; } catch(e) {}
+
+function newGame(name){
   const picks=[];
   for(const d of [1,2,3]){
     const pool = BANK.map((q,i)=>({...q,id:i})).filter(q=>q.d===d);
     picks.push(...shuffle(pool).slice(0,MIX[d]));
   }
   return {
-    phase:"play", i:0, points:0, correct:0, sel:null, locked:false,
+    name, phase:"play", i:0, points:0, correct:0, sel:null, locked:false,
     used5050:false, usedExpert:false, hidden:[], expertMsg:null,
     results:[],
     qs:picks.map(q=>{ const order=shuffle([0,1,2,3]); return {id:q.id,d:q.d,q:q.q,x:q.x,opts:order.map(k=>q.a[k]),ans:order.indexOf(0)}; })
@@ -237,6 +265,11 @@ function renderHud(){
   $("hudQ").textContent = S && S.phase==="play" ? `${S.i+1}/20` : S && S.phase==="end" ? "20/20" : "–";
   $("hudC").textContent = S ? S.correct : 0;
   $("hudP").textContent = S ? S.points.toLocaleString("en-US") : 0;
+  $("hudN").textContent = S ? S.name : "–";
+  if(S) $("hudN").title = S.name;
+  const rb=$("restartBtn");
+  rb.hidden = !(S && S.phase==="play");
+  resetRestartBtn();
 }
 
 const ICON_5050 = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 1.5v13" /></svg>`;
@@ -254,9 +287,21 @@ function renderIntro(){
       <li>You get two lifelines per game: <b>50:50</b> removes two wrong answers, and <b>Call the expert</b> gives you a tip. Experts are good, not perfect.</li>
       <li>Every answer comes with a short explanation so you learn as you play.</li>
     </ul>
-    <div><button class="btn" id="startBtn">Start the round</button></div>
+    <form class="field" id="nameForm" novalidate>
+      <label for="playerName">Your name</label>
+      <input id="playerName" type="text" maxlength="40" autocomplete="name" placeholder="e.g. Marie Curie" value="${esc(lastName)}">
+      <div class="err" id="nameErr" role="alert"></div>
+      <div><button class="btn" type="submit" id="startBtn">Start the round</button></div>
+    </form>
   </div>`;
-  $("startBtn").onclick=()=>{ S=newGame(); render(); };
+  $("nameForm").onsubmit=e=>{
+    e.preventDefault();
+    const name=$("playerName").value.trim();
+    if(!name){ $("nameErr").textContent="Enter your name to start."; $("playerName").focus(); return; }
+    lastName=name; try{ localStorage.setItem("swChampName",name); }catch(err){}
+    S=newGame(name); render();
+  };
+  $("playerName").focus();
 }
 
 function renderQuestion(){
@@ -328,29 +373,65 @@ function next(){
   S.i++; S.sel=null; S.locked=false; S.hidden=[]; S.expertMsg=null; render();
 }
 
-function rankFor(c){
-  if(c>=19) return ["SOLIDWORKS Champion","You know the software inside out. Take a bow."];
-  if(c>=16) return ["Expert","Very strong. A few more details and the title is yours."];
-  if(c>=12) return ["Designer","Solid foundations. Review the misses below and play again."];
-  if(c>=8)  return ["Drafter","Good start. The explanations below are your study list."];
+function rankFor(pct){
+  if(pct>=CHAMP_PCT) return ["SOLIDWORKS Champion","You reached at least 80% of the total points. Take a bow."];
+  if(pct>=0.6) return ["Expert","Very strong. A little more on the hard questions and the title is yours."];
+  if(pct>=0.35) return ["Designer","Solid foundations. Review the misses below and play again."];
+  if(pct>=0.15) return ["Drafter","Good start. The explanations below are your study list."];
   return ["Apprentice","Everyone starts somewhere. Play again and the questions will feel familiar."];
 }
+const fmt = n => n.toLocaleString("en-US");
 function renderEnd(){
-  const [title,line]=rankFor(S.correct);
+  const pct=S.points/TOTAL;
+  const champ=pct>=CHAMP_PCT;
+  const [title,line]=rankFor(pct);
   const misses=S.qs.map((q,i)=>({q,i})).filter(o=>S.results[o.i]===false);
+  const rows=[1,2,3].map(d=>{
+    const idx=S.qs.map((q,i)=>i).filter(i=>S.qs[i].d===d);
+    const ok=idx.filter(i=>S.results[i]);
+    return {d,n:idx.length,c:ok.length,pts:ok.reduce((a,i)=>a+LADDER[i],0),max:idx.reduce((a,i)=>a+LADDER[i],0)};
+  });
+  const goal=Math.ceil(TOTAL*CHAMP_PCT);
   $("sheet").innerHTML = `
   <div class="intro pop">
-    <div class="meta"><span>Round complete</span><span>${S.correct} of 20 correct</span></div>
-    <div class="result-score">${S.points.toLocaleString("en-US")} <span style="font-size:.35em;color:var(--muted)">points</span></div>
-    <div class="rank">${title}</div>
+    <div class="meta"><span>Round complete · ${esc(S.name)}</span><span>${S.correct} of 20 correct</span></div>
+    <div class="result-score">${fmt(S.points)} <span style="font-size:.35em;color:var(--muted)">/ ${fmt(TOTAL)} points</span></div>
+    <div class="rank">${champ?"🏆 ":""}${esc(S.name)}, ${champ?"you are the SOLIDWORKS Champion!":`your rank: ${title}`}</div>
     <p>${line}</p>
+    <div>
+      <div class="meter" role="img" aria-label="${Math.round(pct*100)}% of total points, champion line at 80%"><i class="${champ?"champ":""}" style="width:${Math.min(100,pct*100).toFixed(1)}%"></i><span class="goal"></span></div>
+      <div class="meter-labels"><span>${Math.round(pct*100)}% of total points</span><span>Champion line: 80% = ${fmt(goal)} pts</span></div>
+    </div>
+    ${!champ?`<p style="color:var(--muted)">You needed ${fmt(goal-S.points)} more points for the Champion title.</p>`:""}
+    <div class="table-wrap"><table class="summary">
+      <thead><tr><th>Level</th><th>Correct</th><th>Points earned</th><th>Points available</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td>${DIFF[r.d]}</td><td>${r.c} / ${r.n}</td><td>${fmt(r.pts)}</td><td>${fmt(r.max)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td>Total</td><td>${S.correct} / 20</td><td>${fmt(S.points)}</td><td>${fmt(TOTAL)}</td></tr></tfoot>
+    </table></div>
     ${misses.length?`<div class="meta"><span>Questions to review (${misses.length})</span></div>
     <div class="review">${misses.map(({q})=>`<div class="item">${esc(q.q)}<br><b>${esc(q.opts[q.ans])}</b> · <span style="color:var(--muted)">${esc(q.x)}</span></div>`).join("")}</div>`
     :`<div class="note good"><strong>Perfect round</strong>Every answer was right.</div>`}
-    <div class="controls"><button class="btn" id="againBtn">Play again</button><button class="btn ghost" id="homeBtn">Rules</button></div>
+    <div class="controls"><button class="btn" id="againBtn">Play again</button><button class="btn ghost" id="homeBtn">New player</button></div>
   </div>`;
-  $("againBtn").onclick=()=>{ S=newGame(); render(); };
+  $("againBtn").onclick=()=>{ S=newGame(S.name); render(); };
   $("homeBtn").onclick=()=>{ S=null; render(); };
+}
+
+// Restart: first click asks, second click (within 4 s) restarts with the same player
+let restartTimer=null;
+function resetRestartBtn(){
+  const rb=$("restartBtn"); clearTimeout(restartTimer); restartTimer=null;
+  rb.textContent="Restart game"; rb.classList.remove("warn");
+}
+$("restartBtn").onclick=()=>{
+  const rb=$("restartBtn");
+  if(!restartTimer){
+    rb.textContent="Click again to restart"; rb.classList.add("warn");
+    restartTimer=setTimeout(resetRestartBtn,4000);
+    return;
+  }
+  resetRestartBtn();
+  S=newGame(S.name); render();
 }
 
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
@@ -370,7 +451,7 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Enter"){ e.preventDefault(); S.locked?next():lockIn(); }
 });
 
-function start(data){ S = data && data.S ? data.S : null; render(); }
+function start(data){ S = data && data.S ? data.S : null; if(S && !S.name) S.name="Player"; render(); }
 window.claude?.hot?.snapshot?.(()=>({S}));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 </script>
