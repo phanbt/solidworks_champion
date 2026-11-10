@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Who Knows SOLIDWORKS and 3DEXPERIENCE?</title>
+<style>
+:root{--bg:#0b0f19;--panel:#121a2b;--line:#2a3a5c;--gold:#f5b700;--red:#d7262e;--blue:#3a6fd8;--text:#eef2fa;--muted:#9aa8c7;--ok:#1f9d55;--bad:#c0392b}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:radial-gradient(circle at top,#15233f,#0b0f19 60%);color:var(--text);min-height:100vh}
+header{text-align:center;padding:18px 12px 6px}
+h1{margin:0;font-size:clamp(20px,4vw,30px);color:var(--gold);letter-spacing:.5px}
+.sub{color:var(--muted);font-size:14px;margin-top:4px}
+.wrap{display:grid;grid-template-columns:1fr 240px;gap:16px;max-width:980px;margin:12px auto;padding:0 12px}
+@media (max-width:760px){.wrap{grid-template-columns:1fr}.ladder{order:-1}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.qhead{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;color:var(--muted);font-size:14px;margin-bottom:10px}
+.question{font-size:clamp(17px,2.6vw,21px);line-height:1.4;min-height:84px;display:flex;align-items:center;justify-content:center;text-align:center;background:linear-gradient(#1a2a4a,#11203a);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.answers{grid-template-columns:1fr}}
+.ans{background:#17243f;border:1px solid var(--blue);color:var(--text);border-radius:999px;padding:12px 16px;font-size:16px;text-align:left;cursor:pointer;transition:background .15s}
+.ans:hover:not(:disabled){background:#21365e}
+.ans:disabled{cursor:default}
+.ans .L{display:inline-block;width:26px;font-weight:700;color:var(--gold)}
+.ans.hidden{visibility:hidden}
+.ans.sel{background:var(--gold);color:#111;border-color:var(--gold)}
+.ans.sel .L{color:#111}
+.ans.ok{background:var(--ok);border-color:var(--ok)}
+.ans.bad{background:var(--bad);border-color:var(--bad)}
+.lifelines{display:flex;gap:10px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+.ll{background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:14px}
+.ll:disabled{opacity:.35;cursor:default}
+.msg{min-height:72px;margin-top:14px;padding:12px;border-radius:10px;background:#0e1626;border:1px dashed var(--line);font-size:15px;line-height:1.45}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+button.main{background:var(--red);border:0;color:#fff;padding:10px 18px;border-radius:8px;font-size:15px;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+.ladder h3{margin:0 0 8px;color:var(--gold);font-size:16px}
+.ladder .score{color:var(--text);font-size:15px;margin-bottom:10px}
+.ladder ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.ladder li{display:flex;justify-content:space-between;font-size:14px;padding:5px 10px;border-radius:6px;color:var(--muted)}
+.ladder li.cur{background:var(--gold);color:#111;font-weight:700}
+.ladder li.right{color:var(--ok)}
+.ladder li.wrong{color:var(--bad);text-decoration:line-through}
+</style>
+</head>
+<body>
+<header>
+  <h1>Who Knows SOLIDWORKS and 3DEXPERIENCE?</h1>
+  <div class="sub">Technical questions and 3DEXPERIENCE role and app names · 20 random questions from a bank of 50 · 4 answers each</div>
+</header>
+<div class="wrap">
+  <main class="card" id="game"></main>
+  <aside class="card ladder"><h3>Scoreboard</h3><div class="score" id="score"></div><ol id="ladder"></ol></aside>
+</div>
+
+<script>
+// ---------- QUESTION BANK (50 questions) ----------
+// First answer in each list is the correct one. Options are shuffled at runtime.
+const BANK = [
+ {q:"Which file extension does a SOLIDWORKS part file use?", a:[".SLDPRT",".SLDASM",".SLDDRW",".DRWDOT"], exp:"Part files use .SLDPRT. Assemblies use .SLDASM and drawings use .SLDDRW."},
+ {q:"In a sketch, what colour are entities that are under-defined?", a:["Blue","Black","Red","Green"], exp:"Under-defined sketch entities are blue. Once fully defined they turn black."},
+ {q:"Which assembly mate forces two faces to sit flush and face to face?", a:["Coincident","Concentric","Distance","Width"], exp:"A Coincident mate makes faces, edges or points touch, so planar faces end up flush."},
+ {q:"Which role is the primary role every 3DEXPERIENCE user needs?", a:["3DSwym","3D Creator","Project Planner","Change Manager"], exp:"3DSwym is the role every 3DEXPERIENCE user needs."},
+ {q:"Which feature spins a closed sketch profile around a centreline?", a:["Revolved Boss/Base","Extruded Boss/Base","Swept Boss/Base","Lofted Boss/Base"], exp:"Revolved Boss/Base rotates a profile about an axis to create a rotationally symmetric solid."},
+ {q:"Which feature hollows out a solid, leaving walls of a set thickness?", a:["Shell","Draft","Dome","Fillet"], exp:"Shell removes the chosen faces and leaves walls of the thickness you specify."},
+ {q:"Which role connects SOLIDWORKS Desktop to the 3DEXPERIENCE platform?", a:["Collaborative Designer for SOLIDWORKS","Collaborative Designer for CATIA V5","Product Communicator","3D Product Architect"], exp:"Collaborative Designer for SOLIDWORKS connects SOLIDWORKS Desktop to the platform and its roles and apps."},
+ {q:"Which tab lets you create and manage configurations of a part?", a:["ConfigurationManager","PropertyManager","Design Library","CommandManager"], exp:"The ConfigurationManager tab sits beside the FeatureManager and lists every configuration."},
+ {q:"Which role handles change processes on the platform?", a:["Change Manager","Project Planner","Product Communicator","3D Creator"], exp:"Change Manager supports the change management processes on the platform."},
+ {q:"In an equation, which symbol references a dimension by name, such as D1@Sketch1?", a:["@","#","$","&"], exp:"The @ symbol links to a dimension or feature by its name."},
+ {q:"Which feature builds configurations from an Excel-based table?", a:["Design Table","Equation Manager","Hole Wizard","Bill of Materials"], exp:"Design Table (Insert > Tables) uses Excel to drive dimensions and create configurations."},
+ {q:"Which Evaluate tool reports mass, volume and centre of mass?", a:["Mass Properties","Measure","Section Properties","Interference Detection"], exp:"Mass Properties reports mass, volume, surface area and centre of mass."},
+ {q:"Which Evaluate tool finds overlapping components in an assembly?", a:["Interference Detection","Measure","Mass Properties","Section Properties"], exp:"Interference Detection reports which components overlap each other."},
+ {q:"Which role plans and monitors projects on the 3DEXPERIENCE platform?", a:["Project Planner","Collaborative Industry Innovator","3D Creator","Product Release Engineer"], exp:"Project Planner handles project planning, execution and monitoring in a cloud-based environment."},
+ {q:"In sheet metal, what does the K-factor describe?", a:["Neutral axis location within a bend","Bend radius","Material density","Flange length"], exp:"K-factor is the ratio of the neutral axis position to material thickness, used for flat pattern calculations."},
+ {q:"Which keyboard shortcut rebuilds the active model?", a:["Ctrl+B","Ctrl+R","F5","Ctrl+Shift+R"], exp:"Ctrl+B rebuilds the model, which is useful after changing dimensions."},
+ {q:"In SOLIDWORKS Simulation, what defines how a model is held in place?", a:["Fixtures","Loads","Mesh","Plots"], exp:"Fixtures restrain the model. Loads apply forces, pressures or gravity."},
+ {q:"Which role does a designer need on 3DEXPERIENCE on top of SOLIDWORKS?", a:["Collaborative Business Innovator","Change Manager","Project Planner","Product Communicator"], exp:"Collaborative Business Innovator is the role a designer needs on top of SOLIDWORKS on the 3DEXPERIENCE platform."},
+ {q:"Which role is used to create 3D content on the 3DEXPERIENCE platform?", a:["3D Creator","Change Manager","Project Planner","Product Communicator"], exp:"3D Creator is the role for creating 3D content on the platform."},
+ {q:"Which feature creates a solid by sweeping a closed profile along a path?", a:["Swept Boss/Base","Revolved Boss/Base","Lofted Boss/Base","Extruded Boss/Base"], exp:"A swept feature moves a profile along a path. Revolve spins it around an axis, and Extrude moves it straight."},
+ {q:"Which SOLIDWORKS Simulation study finds natural frequencies and mode shapes?", a:["Frequency","Buckling","Thermal","Fatigue"], exp:"A Frequency study calculates a structure's natural frequencies and mode shapes."},
+ {q:"Which pattern repeats features in a straight direction?", a:["Linear Pattern","Circular Pattern","Mirror","Draft"], exp:"A Linear Pattern repeats features along one or two directions in straight lines."},
+ {q:"Which feature adds a uniform taper angle to faces, for moulding or casting?", a:["Draft","Shell","Dome","Fillet"], exp:"Draft adds a taper angle to selected faces so a part can be removed from a mould."},
+ {q:"Which sketch tool creates a copy of entities at a set distance?", a:["Offset Entities","Convert Entities","Trim Entities","Mirror Entities"], exp:"Offset Entities creates copies of sketch entities at a specified distance."},
+ {q:"Which sketch relation keeps a point at the middle of a line?", a:["Midpoint","Symmetric","Collinear","Tangent"], exp:"The Midpoint relation locks a point to the middle of a line."},
+ {q:"Which sketch relation makes two lines the same length?", a:["Equal","Parallel","Perpendicular","Horizontal"], exp:"Equal makes two lines or arcs the same length, or two arcs the same radius."},
+ {q:"Which drawing view shows a part cut open at a plane?", a:["Section View","Detail View","Auxiliary View","Projected View"], exp:"A Section View cuts the model at a plane and shows the cut face."},
+ {q:"Which file extension is a SOLIDWORKS drawing?", a:[".SLDDRW",".SLDPRT",".SLDASM",".STEP"], exp:".SLDDRW is the SOLIDWORKS drawing file. .STEP is a neutral exchange format."},
+ {q:"Which assembly mate makes two cylinders share the same axis?", a:["Concentric","Coincident","Distance","Width"], exp:"A Concentric mate aligns the axes of two cylindrical or circular features."},
+ {q:"Which assembly tool shows the components in an expanded, separated state?", a:["Exploded View","Section View","Mirror Component","Interference Detection"], exp:"Exploded View separates the components along their assembly directions to show how they fit."},
+ {q:"Which Evaluate tool measures the distance between two entities?", a:["Measure","Mass Properties","Check","Section Properties"], exp:"Measure reports distances, angles and coordinates between selected entities."},
+ {q:"In SOLIDWORKS Simulation, which element applies forces or pressure to a model?", a:["Load","Fixture","Mesh","Plot"], exp:"Loads apply forces, pressures or gravity. Fixtures restrain the model."},
+ {q:"In SOLIDWORKS Simulation, which element splits the model into small elements?", a:["Mesh","Fixture","Load","Plot"], exp:"The mesh divides the model into small elements that the solver calculates on."},
+ {q:"Which SOLIDWORKS Simulation study analyses how heat moves through a part?", a:["Thermal","Frequency","Buckling","Fatigue"], exp:"A Thermal study calculates temperature distribution and heat transfer."},
+ {q:"Which feature creates standardised tapped holes with callouts?", a:["Hole Wizard","Extruded Cut","Dome","Rib"], exp:"Hole Wizard creates standard holes such as tapped and counterbored holes, with callouts."},
+ {q:"Which feature adds a rounded edge?", a:["Fillet","Chamfer","Dome","Rib"], exp:"A Fillet rounds an edge or face with a radius."},
+ {q:"Which feature adds a slanted edge?", a:["Chamfer","Fillet","Draft","Dome"], exp:"A Chamfer cuts a straight angled edge between two faces."},
+ {q:"Which feature adds a thin wall of material attached to a sketch, like a support?", a:["Rib","Dome","Shell","Draft"], exp:"A Rib adds a thin wall of material along an open sketch profile, often used for support."},
+ {q:"In sheet metal, which feature flattens the part into a flat pattern?", a:["Flat Pattern","Edge Flange","Hem","Jog"], exp:"Flat Pattern unfolds the sheet metal part into its flat, cut-ready form."},
+ {q:"Which sheet metal feature adds a bent lip along an edge?", a:["Edge Flange","Jog","Base Flange","Vent"], exp:"An Edge Flange adds a bent flange along a selected edge."},
+ {q:"What is a construction line used for in a sketch?", a:["Guiding geometry that is not part of the feature","Creating a closed profile","Defining the material","Setting the units"], exp:"Construction lines help position and dimension the sketch but are not included as feature geometry."},
+ {q:"Which 3DEXPERIENCE app manages product data, revisions and lifecycle?", a:["ENOVIA","DELMIA","3DEXCITE","CATIA"], exp:"ENOVIA handles product data, revisions and lifecycle. CATIA is for design, DELMIA for manufacturing and 3DEXCITE for marketing visualisation."},
+ {q:"Which 3DEXPERIENCE app is used for manufacturing and production operations?", a:["DELMIA","ENOVIA","3DEXCITE","CATIA"], exp:"DELMIA covers manufacturing and production operations on the 3DEXPERIENCE platform."},
+ {q:"Which area of 3DEXPERIENCE is the gateway to its roles and apps?", a:["Compass","3DSwym","Project Planner","3DEXCITE"], exp:"The Compass is the gateway to the 3DEXPERIENCE platform. It lets you access roles and apps."},
+ {q:"Which 3DEXPERIENCE role is used for organic 3D modelling?", a:["3D Sculptor","3D Product Architect","Structural Designer","Product Communicator"], exp:"3D Sculptor is a 3DEXPERIENCE role for free-form, organic 3D modelling."},
+ {q:"What is the collaborative data storage on 3DEXPERIENCE called?", a:["3DSpace","3DEXCITE","DELMIA","CATIA"], exp:"3DSpace is the collaborative data space where you store and manage files on the platform."},
+ {q:"Which 3DEXPERIENCE app creates marketing and brand visualisation content?", a:["3DEXCITE","ENOVIA","DELMIA","SIMULIA"], exp:"3DEXCITE creates marketing and brand content, including high-quality visualisations."},
+ {q:"Which Dassault Systèmes app is used for simulation on 3DEXPERIENCE?", a:["SIMULIA","DELMIA","ENOVIA","3DEXCITE"], exp:"SIMULIA covers simulation, including structural, fluid and multiphysics analysis."},
+ {q:"Which role do SOLIDWORKS users have on 3DEXPERIENCE alongside Collaborative Business Innovator?", a:["Collaborative Industry Innovator","Change Manager","Project Planner","3D Creator"], exp:"SOLIDWORKS users are assigned to Collaborative Industry Innovator together with Collaborative Business Innovator."},
+ {q:"Which role connects CATIA V5 to the 3DEXPERIENCE platform?", a:["Collaborative Designer for CATIA V5","Collaborative Designer for SOLIDWORKS","Collaborative Designer for NX","Collaborative Designer for Inventor"], exp:"Collaborative Designer for CATIA V5 connects CATIA V5 to the platform."}
+];
+
+// ---------- SETTINGS ----------
+const QUESTIONS_PER_GAME = 20;
+const L = ['A','B','C','D'];
+const PRIZES = Array.from({length:QUESTIONS_PER_GAME}, (_,i) => (i+1)*100);
+
+const $ = s => document.querySelector(s);
+let qs, idx, lifes, phase, sel, over, msg, results;
+
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function start(){
+  // pick 20 random questions from the bank, each with shuffled answers
+  qs = shuffle(BANK.slice()).slice(0, QUESTIONS_PER_GAME).map(q => ({
+    q: q.q, exp: q.exp,
+    opts: shuffle(q.a.map((t,i) => ({t, c: i===0}))),
+    hidden: new Set()
+  }));
+  idx = 0; lifes = {fifty:true, expert:true};
+  phase = 'choose'; sel = -1; over = false; results = [];
+  msg = 'Choose your answer. Wrong answers earn no points, but the game keeps going.';
+  render();
+}
+
+function score(){
+  return results.reduce((s,r,i) => s + (r ? PRIZES[i] : 0), 0);
+}
+
+function render(){
+  const maxScore = PRIZES.reduce((a,b)=>a+b,0);
+  $('#score').innerHTML = `Score: <strong>${score().toLocaleString()}</strong> / ${maxScore.toLocaleString()} pts<br>Correct: ${results.filter(Boolean).length} / ${qs.length}`;
+
+  const ladder = $('#ladder'); ladder.innerHTML = '';
+  for(let i=0;i<qs.length;i++){
+    const li = document.createElement('li');
+    li.textContent = `${i+1}. ${PRIZES[i]} pts`;
+    if(i===idx && !over) li.classList.add('cur');
+    if(results[i]===true) li.classList.add('right');
+    if(results[i]===false) li.classList.add('wrong');
+    ladder.appendChild(li);
+  }
+
+  const g = $('#game');
+  if(over){
+    const correct = results.filter(Boolean).length;
+    g.innerHTML = `<div class="question">🏁 Game finished</div>
+      <div class="msg">You scored <strong>${score().toLocaleString()}</strong> pts and answered <strong>${correct} of ${qs.length}</strong> questions correctly.</div>
+      <div class="actions"><button class="main" id="again">Play again (new random 20)</button></div>`;
+    $('#again').onclick = start;
+    return;
+  }
+
+  const q = qs[idx];
+  const cls = i => {
+    if(q.hidden.has(i)) return 'hidden';
+    if(phase==='locked' && i===sel) return 'sel';
+    if(phase==='revealed'){
+      if(q.opts[i].c) return 'ok';
+      if(i===sel) return 'bad';
+    }
+    return '';
+  };
+  const canLife = phase==='choose';
+
+  g.innerHTML = `
+    <div class="qhead"><span>Question ${idx+1} of ${qs.length}</span><span>Worth ${PRIZES[idx]} pts</span></div>
+    <div class="question">${q.q}</div>
+    <div class="lifelines">
+      <button class="ll" id="fifty" ${lifes.fifty && canLife ? '' : 'disabled'}>50:50</button>
+      <button class="ll" id="expert" ${lifes.expert && canLife ? '' : 'disabled'}>Call the expert</button>
+    </div>
+    <div class="answers">
+      ${q.opts.map((o,i) => `<button class="ans ${cls(i)}" data-i="${i}" ${phase!=='choose' || q.hidden.has(i) ? 'disabled' : ''}><span class="L">${L[i]}:</span>${o.t}</button>`).join('')}
+    </div>
+    <div class="msg">${msg}</div>
+    <div class="actions" id="actions"></div>`;
+
+  g.querySelectorAll('.ans').forEach(b => b.onclick = () => pick(+b.dataset.i));
+  $('#fifty').onclick = fifty;
+  $('#expert').onclick = expert;
+
+  if(phase==='revealed'){
+    const next = idx < qs.length-1 ? 'Next question' : 'See final score';
+    $('#actions').innerHTML = `<button class="main" id="next">${next}</button>`;
+    $('#next').onclick = nextQuestion;
+  }
+}
+
+function pick(i){
+  if(phase!=='choose' || qs[idx].hidden.has(i)) return;
+  phase = 'locked'; sel = i;
+  msg = 'Final answer… let\'s see.';
+  render();
+  setTimeout(reveal, 1500);
+}
+
+function reveal(){
+  phase = 'revealed';
+  const q = qs[idx];
+  const correctIdx = q.opts.findIndex(o => o.c);
+  const right = q.opts[sel].c;
+  results[idx] = right;
+  msg = right
+    ? `✅ Correct! +${PRIZES[idx]} pts. ${q.exp}`
+    : `❌ Not this time, 0 pts. The correct answer was ${L[correctIdx]}: ${q.opts[correctIdx].t}. ${q.exp}`;
+  render();
+}
+
+function nextQuestion(){
+  if(idx === qs.length-1){ over = true; render(); return; }
+  idx++; phase = 'choose'; sel = -1;
+  msg = 'Next question. Good luck!';
+  render();
+}
+
+function fifty(){
+  lifes.fifty = false;
+  const q = qs[idx];
+  const wrong = shuffle([0,1,2,3].filter(i => !q.opts[i].c && !q.hidden.has(i)));
+  wrong.slice(0,2).forEach(i => q.hidden.add(i));
+  msg = '50:50 used. Two wrong answers are removed.';
+  render();
+}
+
+function expert(){
+  lifes.expert = false;
+  const q = qs[idx];
+  const correctIdx = q.opts.findIndex(o => o.c);
+  const avail = [0,1,2,3].filter(i => !q.hidden.has(i));
+  let guess = correctIdx;
+  if(Math.random() >= 0.85){
+    const wrongs = avail.filter(i => i !== correctIdx);
+    if(wrongs.length) guess = wrongs[Math.floor(Math.random()*wrongs.length)];
+  }
+  const conf = guess===correctIdx ? 80 + Math.floor(Math.random()*15) : 40 + Math.floor(Math.random()*20);
+  msg = `🎓 Expert: "I'm about ${conf}% sure it's ${L[guess]}: ${q.opts[guess].t}. Think it through before you commit."`;
+  render();
+}
+
+start();
+</script>
+</body>
+</html>
