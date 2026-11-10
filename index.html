@@ -41,6 +41,7 @@ button:disabled{opacity:.4;cursor:default}
 .ladder li.cur{background:var(--gold);color:#111;font-weight:700}
 .ladder li.right{color:var(--ok)}
 .ladder li.wrong{color:var(--bad);text-decoration:line-through}
+.credit{position:fixed;left:12px;bottom:8px;font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -52,6 +53,7 @@ button:disabled{opacity:.4;cursor:default}
   <main class="card" id="game"></main>
   <aside class="card ladder"><h3>Scoreboard</h3><div class="score" id="score"></div><ol id="ladder"></ol></aside>
 </div>
+<div class="credit">© PHAN Bá Thông aka Grandpa</div>
 
 <script>
 // ---------- QUESTION BANK (50 questions) ----------
